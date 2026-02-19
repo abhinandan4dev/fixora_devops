@@ -28,66 +28,69 @@ class DockerExecutor:
         working_dir: str,
         timeout: int = 300,
     ) -> dict:
-        if not self.client:
+        """Runs tests in Docker if available, otherwise falls back to local subprocess."""
+        
+        # ── Option A: Docker Execution ──
+        if self.client:
+            container = None
+            try:
+                logger.info(f"Docker: Running {image} with command: {command}")
+                
+                # Command normalization for Docker SDK
+                docker_command = ["sh", "-c", command[6:-1]] if command.startswith("sh -c ") else command
+                
+                container = self.client.containers.run(
+                    image,
+                    command=docker_command,
+                    volumes=volumes,
+                    working_dir=working_dir,
+                    detach=True,
+                )
+
+                status = container.wait(timeout=timeout)
+                exit_code = status["StatusCode"]
+                logs = container.logs().decode("utf-8", errors="replace")
+
+                return {
+                    "success": exit_code == 0,
+                    "exit_code": exit_code,
+                    "logs": logs,
+                    "infra_error": False,
+                }
+            except Exception as e:
+                logger.warning(f"Docker execution failed: {e}. Attempting local fallback...")
+            finally:
+                if container:
+                    try: container.remove(force=True)
+                    except: pass
+
+        # ── Option B: Local Fallback (For platforms like Railway) ──
+        import subprocess
+        import os
+        
+        logger.info(f"LocalExecutor: Running command in {working_dir}...")
+        try:
+            # We run the command directly on the host OS
+            # Note: volumes mapping is ignored in local mode as we are already in the repo path
+            process = subprocess.run(
+                command,
+                shell=True,
+                cwd=working_dir,
+                capture_output=True,
+                text=True,
+                timeout=timeout
+            )
+            
+            return {
+                "success": process.returncode == 0,
+                "exit_code": process.returncode,
+                "logs": process.stdout + "\n" + process.stderr,
+                "infra_error": False,
+            }
+        except Exception as e:
             return {
                 "success": False,
-                "logs": "Docker client unavailable. Is Docker Desktop running?",
+                "logs": f"Local execution failed: {str(e)}",
                 "exit_code": -1,
                 "infra_error": True,
             }
-
-        container = None
-        try:
-            logger.info(f"Docker: Running {image} with command: {command}")
-
-            # The Docker Python SDK doesn't use a shell by default.
-            # Commands prefixed with 'sh -c' must be passed as a list.
-            if command.startswith("sh -c "):
-                shell_cmd = command[len("sh -c "):]
-                # Strip surrounding quotes if present
-                if (shell_cmd.startswith("'") and shell_cmd.endswith("'")) or \
-                   (shell_cmd.startswith('"') and shell_cmd.endswith('"')):
-                    shell_cmd = shell_cmd[1:-1]
-                docker_command = ["sh", "-c", shell_cmd]
-            else:
-                docker_command = command
-
-            container = self.client.containers.run(
-                image,
-                command=docker_command,
-                volumes=volumes,
-                working_dir=working_dir,
-                detach=True,
-            )
-
-            status = container.wait(timeout=timeout)
-            exit_code = status["StatusCode"]
-            logs = container.logs().decode("utf-8", errors="replace")
-
-            return {
-                "success": exit_code == 0,
-                "exit_code": exit_code,
-                "logs": logs,
-                "infra_error": False,
-            }
-
-        except Exception as e:
-            err_str = str(e)
-            logger.error(f"Docker execution error: {err_str[:200]}")
-            if container:
-                try:
-                    container.kill()
-                except Exception:
-                    pass
-            return {
-                "success": False,
-                "logs": err_str,
-                "exit_code": -1,
-                "infra_error": True,  # <-- key flag: Docker failed, NOT the tests
-            }
-        finally:
-            if container:
-                try:
-                    container.remove(force=True)
-                except Exception:
-                    pass
