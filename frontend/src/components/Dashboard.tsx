@@ -7,8 +7,8 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ status }) => {
-    const isRunning = status.status === 'RUNNING' || status.status === 'QUEUED';
-    const isPassed = status.status === 'PASSED';
+    const isRunning = status.status === 'RUNNING' || status.status === 'QUEUED' || status.status === 'FIXING';
+    const isPassed = status.status === 'PASSED' || status.status === 'FINISHED';
     const isFailed = status.status === 'FAILED' || status.status === 'ERROR';
 
     return (
@@ -57,8 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ status }) => {
 
                     <div className="flex flex-col items-end">
                         <div className={`px-6 py-3 rounded-xl border backdrop-blur-md flex items-center gap-3 ${isPassed ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                                isFailed ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                    'bg-primary/10 border-primary/20 text-white'
+                            isFailed ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                'bg-primary/10 border-primary/20 text-white'
                             }`}>
                             <span className={`material-symbols-outlined ${isRunning ? 'animate-spin' : ''}`}>
                                 {isRunning ? 'sync' : isPassed ? 'check_circle' : 'error'}

@@ -55,7 +55,9 @@ class RepoAnalyzerAgent:
             "test_framework": "unknown",
             "test_files": [],
             "ci_config": None,
-            "total_files": 0
+            "total_files": 0,
+            "project_root": ".",
+            "all_files": []
         }
 
         file_count = 0
@@ -66,11 +68,26 @@ class RepoAnalyzerAgent:
             file_count += len(files)
             
             for file in files:
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, repo_path)
+                info["all_files"].append(rel_path)
+                
+                # logger.debug(f"Analyzing file: {file}") # Too verbose for logs, but useful for terminal
                 # Detect Language
-                if file == "requirements.txt" or file == "setup.py":
+                file_lower = file.lower()
+                logger.info(f"Scanning file: {file}")
+                if file_lower in ["requirements.txt", "setup.py"]:
                     info["language"] = "python"
-                elif file == "package.json":
+                    info["project_root"] = os.path.relpath(root, repo_path)
+                elif file_lower == "package.json":
                     info["language"] = "javascript"
+                    info["project_root"] = os.path.relpath(root, repo_path)
+                    logger.info(f"Detected JavaScript environment via: {file} at {info['project_root']}")
+                elif file_lower.endswith((".js", ".jsx", ".ts", ".tsx")) and info["language"] == "unknown":
+                    info["language"] = "javascript"
+                    # Don't necessarily change project_root for just a JS file unless no package.json found
+                    if info["project_root"] == ".":
+                         info["project_root"] = os.path.relpath(root, repo_path)
 
                 # Detect Test Files
                 full_path = os.path.join(root, file)

@@ -1,6 +1,7 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { spawn } from "child_process";
+import path from "path";
 import { createProxyMiddleware } from "http-proxy-middleware";
 
 async function startServer() {
@@ -37,9 +38,10 @@ async function startServer() {
 
   // Start Python Backend
   console.log(`Starting Python Backend using ${pythonCmd}...`);
-  const pythonProcess = spawn(pythonCmd, ["backend/main.py"], {
-    stdio: "inherit",
+  const pythonProcess = spawn(pythonCmd, ['main.py'], {
+    stdio: 'inherit',
     shell: true,
+    cwd: path.join(process.cwd(), 'backend')
   });
 
   pythonProcess.on("error", (err) => {
@@ -62,13 +64,14 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
+      root: "frontend",
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
     // Serve static files in production
-    app.use(express.static("dist"));
+    app.use(express.static("frontend/dist"));
   }
 
   app.listen(PORT, "0.0.0.0", () => {

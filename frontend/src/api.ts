@@ -27,7 +27,7 @@ export interface RunStatusResponse {
     iterations_used: number;
     retry_limit: number;
     total_time_seconds: number;
-    status: "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR";
+    status: "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR" | "FIXING" | "FINISHED";
     fixes: FixResult[];
     timeline: TimelineEvent[];
     raw_logs: string;

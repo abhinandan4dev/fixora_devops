@@ -61,7 +61,7 @@ function App() {
         try {
           const data = await api.getStatus(jobId);
           setStatus(data);
-          if (data.status === 'PASSED' || data.status === 'FAILED' || data.status === 'ERROR') {
+          if (data.status === 'PASSED' || data.status === 'FAILED' || data.status === 'ERROR' || data.status === 'FINISHED') {
             clearInterval(interval);
           }
         } catch (e) {
