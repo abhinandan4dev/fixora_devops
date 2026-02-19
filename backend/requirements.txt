@@ -5,3 +5,4 @@ docker
 gitpython
 pyyaml
 requests
+python-dotenv
