@@ -20,6 +20,7 @@ export interface TimelineEvent {
 }
 
 export interface RunStatusResponse {
+    job_id: string;
     repo_url: string;
     branch_name: string;
     failures_detected: number;
@@ -28,14 +29,17 @@ export interface RunStatusResponse {
     retry_limit: number;
     total_time_seconds: number;
     status: "QUEUED" | "RUNNING" | "PASSED" | "FAILED" | "ERROR" | "FIXING" | "FINISHED";
+    score: number;
     fixes: FixResult[];
     timeline: TimelineEvent[];
     raw_logs: string;
 }
 
+const API_BASE = import.meta.env.PROD ? '' : '';
+
 export const api = {
     runAgent: async (data: RunAgentRequest): Promise<{ job_id: string }> => {
-        const res = await fetch('/api/run-agent', {
+        const res = await fetch(`${API_BASE}/api/run-agent`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
@@ -45,7 +49,7 @@ export const api = {
     },
 
     getStatus: async (jobId: string): Promise<RunStatusResponse> => {
-        const res = await fetch(`/api/run-status/${jobId}`);
+        const res = await fetch(`${API_BASE}/api/run-status/${jobId}`);
         if (!res.ok) throw new Error('Failed to get status');
         return res.json();
     }

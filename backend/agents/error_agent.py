@@ -18,15 +18,16 @@ logger = logging.getLogger(__name__)
 
 class ErrorAgent:
     def __init__(self):
-        self.api_key = settings.AI_ERROR_KEY
+        pass
 
     def parse_logs(self, logs: str) -> List[Dict]:
         """
         Returns a list of error dicts: {file, line, type, message}.
         AI path is attempted first; deterministic regex is the fallback.
         """
-        if self.api_key:
-            ai_errors = self._ai_parse(logs)
+        key = settings.AI_ERROR_KEY
+        if key:
+            ai_errors = self._ai_parse(logs, key)
             if ai_errors is not None:
                 return ai_errors
 
@@ -35,7 +36,7 @@ class ErrorAgent:
 
     # ── AI Layer ─────────────────────────────────────────────────────────────
 
-    def _ai_parse(self, logs: str) -> List[Dict] | None:
+    def _ai_parse(self, logs: str, api_key: str) -> List[Dict] | None:
         prompt = (
             "You are a CI/CD log parser. Analyze the following test output logs and "
             "return ONLY a JSON object in this exact format:\n"
@@ -45,7 +46,7 @@ class ErrorAgent:
             "If no errors exist, return: {\"errors\": []}\n\n"
             f"LOGS:\n{logs[:4000]}"  # Truncate to stay within token limits
         )
-        raw = call_ai(self.api_key, prompt)
+        raw = call_ai(api_key, prompt)
         if not raw:
             return None
 

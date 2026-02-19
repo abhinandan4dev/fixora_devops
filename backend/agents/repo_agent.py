@@ -19,7 +19,7 @@ SUPPORTED_LANGUAGES = {"python", "javascript", "java_gradle", "java_maven"}
 
 class RepoAgent:
     def __init__(self):
-        self.api_key = settings.AI_REPO_KEY
+        pass
 
     def analyze(self, repo_path: str) -> Dict:
         """
@@ -29,8 +29,9 @@ class RepoAgent:
         info = self._filesystem_scan(repo_path)
 
         # --- AI enhancement (optional) ---
-        if self.api_key:
-            ai_result = self._ai_analyze(info, repo_path)
+        key = settings.AI_REPO_KEY
+        if key:
+            ai_result = self._ai_analyze(info, repo_path, key)
             if ai_result:
                 info.update(ai_result)
 
@@ -126,14 +127,14 @@ class RepoAgent:
 
     # ── AI Layer ─────────────────────────────────────────────────────────────
 
-    def _ai_analyze(self, fs_info: Dict, repo_path: str) -> Dict | None:
+    def _ai_analyze(self, fs_info: Dict, repo_path: str, api_key: str) -> Dict | None:
         prompt = (
             f"You are a CI/CD repository analyzer. Given this filesystem analysis:\n"
             f"{json.dumps(fs_info, indent=2)}\n\n"
             f"Return ONLY a JSON object with keys: language, test_framework, "
             f"docker_image, test_command. Use only known, safe values."
         )
-        raw = call_ai(self.api_key, prompt)
+        raw = call_ai(api_key, prompt)
         if not raw:
             return None
         try:

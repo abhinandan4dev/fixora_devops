@@ -26,11 +26,7 @@ COMMENT_WIDTH    = 66
 
 class FixAgent:
     def __init__(self):
-        self.api_key = settings.AI_FIX_KEY
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # Public interface called by iteration_controller
-    # ─────────────────────────────────────────────────────────────────────────
+        pass
 
     def apply_fix(
         self,
@@ -38,62 +34,57 @@ class FixAgent:
         file_content: str,
         test_logs: str,
     ) -> Tuple[str, str, bool]:
-        """
-        Attempts to fix the broken file.
-
-        Returns
-        -------
-        (new_content, commit_msg, ai_fixed)
-        new_content : the content to write back to the file
-        commit_msg  : short string for the git commit message
-        ai_fixed    : True if AI rewrote the code, False if only a comment was added
-        """
+        """Attempts to fix the broken file by rewriting code or appending instructions."""
         bug_type = sanitize_bug_type(error.get("type", "LOGIC"))
         file     = error.get("file", "unknown")
         line     = error.get("line", 0)
 
-        if self.api_key:
-            fixed_code, desc = self._ai_rewrite(error, file_content, test_logs)
-            if fixed_code and self.check_diff_limit(file_content, fixed_code):
-                commit_msg = f"{bug_type} error in {file} line {line} → Fixed: {desc}"
-                return fixed_code, commit_msg, True
-            elif fixed_code:
-                logger.warning("FixAgent: AI fix exceeded 30% diff limit — falling back to comment.")
+        # Pre-process: Strip any existing AI-AGENT comment blocks from previous failed iterations
+        # to prevent the file from bloating with infinite comments.
+        cleaned_content = re.sub(r'\n+#={10,}.*?\[AI-AGENT FIX REQUIRED.*?\n#={10,}\n', '', file_content, flags=re.DOTALL)
+        
+        key = settings.AI_FIX_KEY
+        if key:
+            logger.info(f"FixAgent: Attempting AI rewrite for {file}...")
+            fixed_code, desc = self._ai_rewrite(error, cleaned_content, test_logs, key)
+            
+            if fixed_code:
+                if self.check_diff_limit(cleaned_content, fixed_code):
+                    commit_msg = f"{bug_type} error in {file} line {line} → Fixed: {desc}"
+                    return fixed_code, commit_msg, True
+                else:
+                    logger.warning("FixAgent: AI fix rejected (diff limit). Falling back to annotation.")
+            else:
+                logger.error("FixAgent: AI returned no content. Falling back to annotation.")
 
-        # Fallback: append a rich comment so a human/AI dev can apply it later
-        comment   = self._build_comment_block(error, file_content, test_logs)
-        new_content = file_content + comment
-        short_desc  = self._deterministic_desc_short(error)
-        commit_msg  = f"{bug_type} error in {file} line {line} → Annotated: {short_desc}"
+        # Fallback: append a rich comment block
+        comment = self._build_comment_block(error, cleaned_content, test_logs)
+        new_content = cleaned_content + comment
+        short_desc = self._deterministic_desc_short(error)
+        commit_msg = f"{bug_type} error in {file} line {line} → Annotated: {short_desc}"
         return new_content, commit_msg, False
 
     def check_diff_limit(self, original: str, modified: str) -> bool:
         """Safety gate: reject rewrites that change too much of the file."""
         orig_len = len(original)
-        if orig_len == 0:
-            return True
+        if orig_len == 0: return True
 
-        # Small files get a more generous limit since even 1-line fixes are big %
-        limit = 0.80 if orig_len < 500 else MAX_DIFF_PERCENT
+        # For very small files (e.g. calculator.py), even a 2-line change is > 50%.
+        # We allow up to 90% changes for files under 1KB.
+        limit = 0.90 if orig_len < 1000 else MAX_DIFF_PERCENT
         ratio = abs(len(modified) - orig_len) / orig_len
 
         if ratio > limit:
-            logger.warning(
-                f"FixAgent: Rejected — diff ratio {ratio:.1%} exceeds {limit:.0%} (file size: {orig_len} bytes)."
-            )
+            logger.warning(f"FixAgent: Rejected — diff ratio {ratio:.1%} exceeds {limit:.0%}")
             return False
         return True
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # AI Rewrite (primary path)
-    # ─────────────────────────────────────────────────────────────────────────
-
     def _ai_rewrite(
-        self, error: Dict, file_content: str, test_logs: str
+        self, error: Dict, file_content: str, test_logs: str, api_key: str
     ) -> Tuple[Optional[str], str]:
         """
-        Sends the full broken file and error context to the AI.
-        Expects the AI to return only the corrected file content — no explanations.
+        Sends broken file to AI for repair.
+        Optimized to use a single AI call to minimize rate-limit (429) triggers.
         """
         bug_type = error.get("type", "LOGIC")
         line_num = error.get("line", 0)
@@ -101,50 +92,37 @@ class FixAgent:
         context  = self._extract_context(file_content, line_num)
 
         prompt = (
-            "You are an autonomous code repair agent.\n"
-            "A CI/CD test run failed. Your job is to fix ONLY the broken part.\n\n"
-            "Rules (MUST follow):\n"
-            "- Return ONLY the complete corrected file content. No markdown, no explanations.\n"
-            "- Do NOT add import statements that did not exist before.\n"
-            "- Do NOT rename functions, classes, or variables.\n"
-            "- Do NOT rewrite more than 30% of the file.\n"
-            "- Fix exactly the reported error and nothing else.\n"
-            "- Keep every other line identical to the original.\n\n"
-            f"BUG TYPE : {bug_type}\n"
-            f"FILE     : {error.get('file', 'unknown')}\n"
-            f"LINE     : {line_num}\n"
-            f"ERROR    : {message}\n\n"
-            f"CODE CONTEXT (around line {line_num}):\n{context}\n\n"
-            f"TEST LOG (last 800 chars):\n{test_logs[-800:]}\n\n"
+            "You are a code repair agent. Fix this bug and explain the fix.\n"
+            "Respond ONLY with a JSON object in this format:\n"
+            '{"fixed_code": "FULL_CONTENT_HERE", "description": "SHORT_DESC_HERE"}\n\n'
+            f"ERROR: {bug_type} at line {line_num}: {message}\n"
+            f"FILE: {error.get('file', 'unknown')}\n"
+            f"CONTEXT:\n{context}\n\n"
             f"FULL FILE CONTENT:\n{file_content}"
         )
 
-        raw = call_ai(self.api_key, prompt)
-        if not raw:
-            return None, ""
+        raw = call_ai(api_key, prompt)
+        if not raw: return None, ""
 
-        # Strip accidental markdown code fences the AI might wrap output in
-        fixed_code = self._strip_markdown_fences(raw)
-
-        # Generate a short description for the commit message
-        desc_prompt = (
-            f"In one sentence, describe what code change was made to fix this error: "
-            f"{bug_type} at line {line_num} — {message}"
-        )
-        desc_raw = call_ai(self.api_key, desc_prompt) or f"Fix {bug_type} at line {line_num}"
-        desc = desc_raw.strip().split("\n")[0][:120]  # Keep commit msg short
-
-        return fixed_code, desc
+        try:
+            # Clean possible markdown wrap before parsing
+            json_str = self._strip_markdown_fences(raw)
+            data = json.loads(json_str)
+            return data.get("fixed_code"), data.get("description", f"fix {bug_type}")
+        except:
+            logger.warning("FixAgent: AI did not return JSON. Attempting raw text recovery.")
+            # If AI ignores JSON instructions, it usually returns just the file content
+            fixed_code = self._strip_markdown_fences(raw)
+            return fixed_code, f"fixed {bug_type} anomaly"
 
     def _strip_markdown_fences(self, text: str) -> str:
-        """Remove ```python ... ``` or ``` ... ``` wrappers if AI added them."""
-        text = text.strip()
-        # Match opening fence (with optional language tag) and closing fence
-        pattern = r'^```[a-zA-Z]*\n(.*?)\n?```$'
-        match = re.match(pattern, text, re.DOTALL)
+        """Robust stripping of markdown fences and surrounding fluff."""
+        # Find any text between ``` and ```
+        match = re.search(r'```(?:[a-zA-Z]*)\n?(.*?)\n?```', text, re.DOTALL)
         if match:
-            return match.group(1)
-        return text
+            return match.group(1).strip()
+        # Fallback: if no fences, just return the text
+        return text.strip()
 
     # ─────────────────────────────────────────────────────────────────────────
     # Fallback: Rich Comment Block

@@ -17,8 +17,6 @@ ALLOWED_BUG_TYPES = {"LINTING", "SYNTAX", "LOGIC", "TYPE_ERROR", "IMPORT", "INDE
 
 # Google Gemini API
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
-
-
 def call_ai(api_key: str, prompt: str, timeout: int = 30) -> str | None:
     """
     Makes a single call to Google Gemini API.

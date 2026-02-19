@@ -8,6 +8,8 @@ import git
 import shutil
 import logging
 import tempfile
+import stat
+import time
 
 from config import settings
 from utils.branch_naming import format_branch_name
@@ -46,12 +48,16 @@ class GitService:
 
     def commit_fix(self, repo_path: str, message: str):
         repo = git.Repo(repo_path)
-        # Only stage files that are already tracked and modified — never add new artifacts
-        repo.git.add(u=True)
-        full_msg = f"[AI-AGENT] {message}"
-        if repo.is_dirty():
+        # Stage all changes (modified and untracked fixes)
+        repo.git.add(A=True)
+        full_msg = message if message.startswith("[AI-AGENT]") else f"[AI-AGENT] {message}"
+        
+        # Check if there are actually changes staged to commit
+        if repo.is_dirty(untracked_files=True) or len(repo.index.diff("HEAD")) > 0:
             repo.index.commit(full_msg)
             logger.info(f"Git: Committed -> {full_msg}")
+        else:
+            logger.warning("Git: No changes detected to commit.")
 
     def push(self, repo_path: str, branch_name: str):
         repo = git.Repo(repo_path)
@@ -68,9 +74,29 @@ class GitService:
             raise
 
     def cleanup(self, path: str):
+        if not os.path.exists(path):
+            return
+        logger.info(f"Git: Cleaning up {path}")
+        
+        # Close any git handles to prevent locking on Windows
+        try:
+            repo = git.Repo(path)
+            repo.close()
+        except:
+            pass
+
         def on_rm_error(func, fpath, exc_info):
-            import stat
-            os.chmod(fpath, stat.S_IWRITE)
-            func(fpath)
-        if os.path.exists(path):
-            shutil.rmtree(path, onerror=on_rm_error)
+            try:
+                os.chmod(fpath, stat.S_IWRITE)
+                func(fpath)
+            except:
+                pass
+
+        # Robust retry for Windows file locks
+        for i in range(3):
+            try:
+                shutil.rmtree(path, onerror=on_rm_error)
+                if not os.path.exists(path):
+                    return
+            except:
+                time.sleep(0.5)

@@ -2,6 +2,7 @@ import logging
 import time
 import os
 import json
+import re as _re
 from typing import Dict, List
 from agents.repo_agent import RepoAgent
 from agents.error_agent import ErrorAgent
@@ -50,11 +51,11 @@ class IterationController:
                     "timestamp": time.strftime("%H:%M:%S")
                 })
 
-                # Use stack-detected image & command (supports Python / JS / Gradle / Maven)
+                # Use stack-detected image & command
                 image = stack_info.get("docker_image", "python:3.9-slim")
                 cmd = stack_info.get("test_command", "pytest")
                 
-                # Execute Tests — always from repo root (/app)
+                # Execute Tests
                 test_result = self.docker_executor.execute(
                     image, cmd,
                     volumes={repo_path: {'bind': '/app', 'mode': 'rw'}},
@@ -62,32 +63,13 @@ class IterationController:
                 )
                 job_ref["raw_logs"] += f"Iteration {iteration} Logs:\n{test_result['logs']}\n"
 
-                # Infrastructure error (Docker itself failed, not the tests)
                 if test_result.get("infra_error"):
-                    logger.error(f"Docker infrastructure error on iteration {iteration}. Stopping loop.")
                     job_ref["status"] = "ERROR"
-                    job_ref["raw_logs"] += f"\nInfra Error: {test_result['logs']}\n"
                     break
 
-                # No tests found — stop immediately, retrying won't help
-                logs_lower = test_result["logs"].lower()
-                no_tests = (
-                    "collected 0 items" in logs_lower
-                    or "no tests ran" in logs_lower
-                    or "no test framework detected" in logs_lower
-                    or test_result.get("exit_code") == 5  # pytest: no tests collected
-                )
-                if no_tests:
-                    logger.error("No tests found in the repository. Cannot proceed.")
-                    job_ref["status"] = "ERROR"
-                    job_ref["raw_logs"] += "\nNo test files were discovered. Ensure test files follow naming conventions (test_*.py, *.test.js, etc.)\n"
-                    break
-
-                # Parse Errors (AI Layer 2)
+                # Parse Errors
                 errors = self.error_agent.parse_logs(test_result["logs"])
 
-                # Guard: if Docker ran but tests produced no parseable errors AND
-                # the run was not successful, inject a synthetic error.
                 if not test_result["success"] and not errors:
                     errors = [{
                         "file": "unknown",
@@ -95,34 +77,24 @@ class IterationController:
                         "type": "LOGIC",
                         "message": f"Test runner exited with code {test_result['exit_code']} but produced no parseable errors.",
                     }]
-                    logger.warning("Injected synthetic error — test runner crash produced no structured output.")
 
                 job_ref["failures_detected"] += len(errors)
 
-                # If genuinely passing, stop
                 if test_result["success"] and not errors:
                     job_ref["status"] = "PASSED"
                     break
                 
-                # Generate & Apply Fixes (AI Layer 3)
                 raw_logs_this_iter = test_result["logs"]
                 fixes_this_iteration = 0
 
                 for err in errors:
-                    # ── Resolve target file ──
-                    # For assertion errors in test files, the real bug is in the
-                    # source file. If we detected "source function: X", look for
-                    # the file that defines X and target THAT instead.
                     target_file = err["file"]
                     source_func = ""
 
-                    # Extract source function from error message
-                    import re as _re
                     sf_match = _re.search(r'source function: (\w+)', err.get("message", ""))
                     if sf_match:
                         source_func = sf_match.group(1)
 
-                    # If the error is in a test file, find the actual source file
                     if source_func and ("test_" in target_file or "_test." in target_file):
                         for root_dir, _, dir_files in os.walk(repo_path):
                             for df in dir_files:
@@ -132,30 +104,23 @@ class IterationController:
                                         with open(candidate, "r", encoding="utf-8", errors="replace") as cf:
                                             if f"def {source_func}" in cf.read():
                                                 target_file = os.path.relpath(candidate, repo_path)
-                                                logger.info(f"Resolved fix target: {err['file']} -> {target_file} (function: {source_func})")
                                                 break
                                     except Exception:
                                         pass
 
                     file_path = os.path.join(repo_path, target_file)
                     patch_applied = False
-
-                    # Dedup: skip if already annotated this file+line in a previous iteration
+                    
+                    # Dedup Logic: prevent repeating the same annotation without progress
                     dedup_key = f"{target_file}:{err['line']}"
-                    if dedup_key in annotated_set:
-                        logger.info(f"Skipping duplicate annotation for {dedup_key}")
-                        continue
 
-                    # Read current file content
                     original_content = ""
                     if os.path.exists(file_path):
                         with open(file_path, "r", encoding="utf-8", errors="replace") as f:
                             original_content = f.read()
+                        original_content = _re.sub(r'\n+#={10,}.*?\[AI-AGENT FIX REQUIRED.*?\n#+={10,}\n?', '', original_content, flags=_re.DOTALL)
 
-                    # AI rewrites actual code (primary) or appends comment (fallback)
-                    # Update the error dict with the resolved target for AI context
                     resolved_err = {**err, "file": target_file}
-
                     new_content, commit_msg, ai_fixed = self.fix_agent.apply_fix(
                         error=resolved_err,
                         file_content=original_content,
@@ -163,17 +128,20 @@ class IterationController:
                     )
 
                     if os.path.exists(file_path):
-                        # Diff limit only applies to AI rewrites (safety gate).
                         safe_to_write = (not ai_fixed) or self.fix_agent.check_diff_limit(original_content, new_content)
 
                         if safe_to_write:
                             with open(file_path, "w", encoding="utf-8", errors="replace") as f:
                                 f.write(new_content)
                             patch_applied = True
-                            fix_mode = "AI_REWRITE" if ai_fixed else "ANNOTATED"
-                            logger.info(f"FixAgent [{fix_mode}]: {commit_msg}")
-                            if not ai_fixed:
+                            
+                            # Log and track progress
+                            if ai_fixed:
+                                fixes_this_iteration += 1 # Real progress
+                            elif dedup_key not in annotated_set:
+                                fixes_this_iteration += 1 # New annotation is progress
                                 annotated_set.add(dedup_key)
+                            
                         else:
                             job_ref["raw_logs"] += f"Safety: Rejected oversized AI rewrite for {target_file}\n"
 
@@ -187,33 +155,62 @@ class IterationController:
                     })
                     if patch_applied:
                         job_ref["fixes_applied"] += 1
-                        fixes_this_iteration += 1
 
-                # If nothing was changed this iteration, stop — retrying won't help
                 if fixes_this_iteration == 0:
-                    logger.info("No new fixes applied this iteration — all errors already annotated. Stopping.")
+                    logger.info("No NEW fixes or unique annotations applied. Breaking loop to prevent infinite cycle.")
                     job_ref["status"] = "FINISHED"
                     break
 
-                # Verify Continuation (AI Layer 4)
                 if not self.verify_agent.should_continue(len(errors), iteration, retry_limit):
                     job_ref["status"] = "FINISHED"
                     break
                     
                 iteration += 1
+                time.sleep(1.5)
 
             # 4. Finalize
+            elapsed = round(time.time() - start_time, 2)
+            job_ref["total_time_seconds"] = elapsed
             job_ref["score"] = calculate_repair_score(
                 job_ref["failures_detected"], 
                 job_ref["fixes_applied"], 
-                job_ref["iterations_used"]
+                job_ref["iterations_used"],
+                total_time_seconds=elapsed,
+                total_commits=len(job_ref["fixes"]),
             )
             self.git_service.push(repo_path, branch_name)
             
-            # Generate results.json
+            # Generate results.json (PS3 required)
+            from services.formatter import format_ps3_output
+            ps3_fixes = []
+            for fix in job_ref["fixes"]:
+                # Extract fix description from commit message
+                msg = fix.get("commit_message", "")
+                arrow_idx = msg.find("→")
+                desc = msg[arrow_idx + 1:].strip() if arrow_idx >= 0 else "applied fix"
+                desc = desc.replace("Fix:", "").replace("Fixed:", "").replace("Annotated:", "").strip()
+
+                ps3_fixes.append({
+                    "formatted_output": f"[AI-AGENT] {format_ps3_output(fix['bug_type'], fix['file'], fix['line_number'], desc)}",
+                    **fix,
+                })
+
+            results = {
+                "job_id": self.job_id,
+                "repo_url": job_ref["repo_url"],
+                "branch_name": job_ref["branch_name"],
+                "failures_detected": job_ref["failures_detected"],
+                "fixes_applied": job_ref["fixes_applied"],
+                "iterations_used": job_ref["iterations_used"],
+                "total_time_seconds": elapsed,
+                "status": job_ref["status"],
+                "score": job_ref["score"],
+                "fixes": ps3_fixes,
+                "timeline": job_ref["timeline"],
+            }
             results_path = os.path.join(repo_path, "results.json")
-            with open(results_path, "w") as f:
-                json.dump(job_ref, f, indent=2, default=str)
+            with open(results_path, "w", encoding="utf-8") as f:
+                json.dump(results, f, indent=2, default=str)
 
         except Exception as e:
             logger.error(f"Loop failed: {e}")

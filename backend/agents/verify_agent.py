@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class VerifyAgent:
     def __init__(self):
-        self.api_key = settings.AI_VERIFY_KEY
+        pass
 
     def should_continue(self, failures: int, iteration: int, retry_limit: int) -> bool:
         """
@@ -32,8 +32,9 @@ class VerifyAgent:
             return False
 
         # Ask AI for contextual judgment
-        if self.api_key:
-            ai_decision = self._ai_decide(failures, iteration, retry_limit)
+        key = settings.AI_VERIFY_KEY
+        if key:
+            ai_decision = self._ai_decide(failures, iteration, retry_limit, key)
             if ai_decision is not None:
                 return ai_decision
 
@@ -43,7 +44,7 @@ class VerifyAgent:
 
     # ── AI Layer ─────────────────────────────────────────────────────────────
 
-    def _ai_decide(self, failures: int, iteration: int, retry_limit: int) -> bool | None:
+    def _ai_decide(self, failures: int, iteration: int, retry_limit: int, api_key: str) -> bool | None:
         prompt = (
             "You are a CI/CD repair verification agent. Given the current state, "
             "decide whether to continue the repair loop.\n"
@@ -51,7 +52,7 @@ class VerifyAgent:
             '{"should_continue": true, "reason": "brief explanation"}\n\n'
             f"State: {json.dumps({'failures_remaining': failures, 'current_iteration': iteration, 'retry_limit': retry_limit})}"
         )
-        raw = call_ai(self.api_key, prompt)
+        raw = call_ai(api_key, prompt)
         if not raw:
             return None
 
