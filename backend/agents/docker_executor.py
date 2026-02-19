@@ -1,37 +1,44 @@
 import docker
 import os
+from utils import get_logger
+
+logger = get_logger(__name__)
 
 class DockerExecutor:
     def __init__(self):
         try:
             self.client = docker.from_env()
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to initialize Docker client: {e}")
             self.client = None
 
     def run_container(self, image: str, command: str, volumes: dict, working_dir: str) -> dict:
         if not self.client:
-            raise Exception("Docker client not available")
+            raise RuntimeError("Docker client not initialized")
 
         try:
+            logger.info(f"Starting container with image {image}")
             container = self.client.containers.run(
                 image,
-                command=f"bash -c '{command}'",
+                command=command,
                 volumes=volumes,
                 working_dir=working_dir,
-                detach=True
-                # remove=True # We might want to inspect logs if it fails immediately
+                detach=True,
+                # remove=True # Don't auto-remove instantly so we can get logs, handle manually
             )
             
-            result = container.wait()
+            exit_code = container.wait()['StatusCode']
             logs = container.logs().decode('utf-8')
+            
             container.remove()
             
             return {
-                "success": result['StatusCode'] == 0,
-                "exit_code": result['StatusCode'],
+                "success": exit_code == 0,
+                "exit_code": exit_code,
                 "logs": logs
             }
         except Exception as e:
+            logger.error(f"Docker execution failed: {e}")
             return {
                 "success": False,
                 "exit_code": 1,

@@ -7,28 +7,37 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Install Python dependencies
-  console.log("Installing Python dependencies...");
-  const installProcess = spawn("python3", ["-m", "pip", "install", "-r", "backend/requirements.txt"], {
-    stdio: "inherit",
-    shell: true,
-  });
+  const pythonCmd = process.platform === "win32" ? "python" : "python3";
 
-  await new Promise((resolve, reject) => {
-    installProcess.on("close", (code) => {
-      if (code === 0) {
-        resolve(null);
-      } else {
-        console.error("Failed to install Python dependencies");
-        // We continue anyway, maybe they are already installed or pip is not in path
-        resolve(null);
-      }
+  // Install Python dependencies
+  const pipDoneFile = "backend/.pip_done";
+  const fs = await import("fs");
+
+  if (!fs.existsSync(pipDoneFile)) {
+    console.log("Installing Python dependencies (First time setup)...");
+    const installProcess = spawn(pythonCmd, ["-m", "pip", "install", "-r", "backend/requirements.txt"], {
+      stdio: "inherit",
+      shell: true,
     });
-  });
+
+    await new Promise((resolve) => {
+      installProcess.on("close", (code) => {
+        if (code === 0) {
+          fs.writeFileSync(pipDoneFile, "");
+          resolve(null);
+        } else {
+          console.error("Failed to install Python dependencies. Ensure Python is in your PATH.");
+          resolve(null);
+        }
+      });
+    });
+  } else {
+    console.log("Python dependencies already installed. Skipping...");
+  }
 
   // Start Python Backend
-  console.log("Starting Python Backend...");
-  const pythonProcess = spawn("python3", ["backend/main.py"], {
+  console.log(`Starting Python Backend using ${pythonCmd}...`);
+  const pythonProcess = spawn(pythonCmd, ["backend/main.py"], {
     stdio: "inherit",
     shell: true,
   });
@@ -65,12 +74,26 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
-  
-  // Cleanup
-  process.on('SIGINT', () => {
+
+  // Robust Cleanup Function
+  const cleanup = () => {
+    console.log('Cleaning up processes...');
+
+    // On Windows, child.kill() only kills the shell, not the process.
+    // We must use taskkill to kill the tree (/T) forcefully (/F).
+    if (process.platform === 'win32') {
+      if (pythonProcess.pid) {
+        spawn("taskkill", ["/pid", pythonProcess.pid.toString(), "/f", "/t"]);
+      }
+    } else {
       pythonProcess.kill();
-      process.exit();
-  });
+    }
+    process.exit();
+  };
+
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+  process.on('exit', cleanup);
 }
 
 startServer();
