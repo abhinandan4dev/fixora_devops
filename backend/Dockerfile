@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -16,6 +16,5 @@ COPY . .
 
 # Expose FastAPI port
 EXPOSE 8000
-
-# Start the server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the server using the dynamic PORT provided by Railway
+CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"

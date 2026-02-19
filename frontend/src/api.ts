@@ -35,22 +35,25 @@ export interface RunStatusResponse {
     raw_logs: string;
 }
 
-const API_BASE = import.meta.env.PROD ? '' : '';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export const api = {
     runAgent: async (data: RunAgentRequest): Promise<{ job_id: string }> => {
-        const res = await fetch(`${API_BASE}/api/run-agent`, {
+        // Strip out the hardcoded `/api/` prefix to match the FastAPI routing directly
+        const url = API_BASE ? `${API_BASE}/run-agent` : '/run-agent';
+        const res = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
-        if (!res.ok) throw new Error('Failed to start agent');
+        if (!res.ok) throw new Error('Failed to start deployment sequence. Verify Railway backend is online.');
         return res.json();
     },
 
     getStatus: async (jobId: string): Promise<RunStatusResponse> => {
-        const res = await fetch(`${API_BASE}/api/run-status/${jobId}`);
-        if (!res.ok) throw new Error('Failed to get status');
+        const url = API_BASE ? `${API_BASE}/run-status/${jobId}` : `/run-status/${jobId}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch telemetry status.');
         return res.json();
     }
 };
