@@ -14,7 +14,8 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 
 COPY . .
-RUN npm run build
+# Explicitly target the frontend directory for the build to avoid "index.html not found"
+RUN npx vite build frontend
 
 # --- Stage 2: Final Runtime ---
 FROM node:18-slim
