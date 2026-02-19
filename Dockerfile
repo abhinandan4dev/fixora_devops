@@ -1,9 +1,19 @@
 # --- Stage 1: Build Frontend ---
 FROM node:18-slim AS builder
 WORKDIR /app
+
+# Install build essentials for native modules (like better-sqlite3)
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package*.json ./
+# Use legacy-peer-deps to ignore conflicts during build
+RUN npm install --legacy-peer-deps
+
 COPY . .
-RUN npm install
 RUN npm run build
 
 # --- Stage 2: Final Runtime ---
@@ -19,7 +29,6 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY backend/requirements.txt ./backend/
-# Added --break-system-packages to solve 'externally managed environment' errors in newer images
 RUN pip3 install --no-cache-dir --break-system-packages -r backend/requirements.txt
 
 # Copy build artifacts and source
