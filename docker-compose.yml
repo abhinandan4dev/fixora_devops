@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  fixora:
+    build: .
+    container_name: fixora_engine
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Optional: mount a local folder for agents to work in if needed
+      # - ./workdir:/tmp/fixtora_hackathon
+    environment:
+      - NODE_ENV=production
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # Specific keys (optional)
+      - AI_REPO_KEY=${AI_REPO_KEY}
+      - AI_ERROR_KEY=${AI_ERROR_KEY}
+      - AI_FIX_KEY=${AI_FIX_KEY}
+      - AI_VERIFY_KEY=${AI_VERIFY_KEY}
+    restart: unless-stopped
