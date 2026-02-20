@@ -42,6 +42,12 @@ class GitService:
     def setup_branch(self, repo_path: str, team: str, leader: str) -> str:
         branch_name = format_branch_name(team, leader)
         repo = git.Repo(repo_path)
+        
+        # Cloud environments don't have global git configs, we must set them per-repo
+        with repo.config_writer() as git_config:
+            git_config.set_value('user', 'email', 'bot@fixora.ai')
+            git_config.set_value('user', 'name', f'FiXora Agent ({leader})')
+            
         logger.info(f"Git: Creating branch {branch_name}")
         repo.git.checkout("-B", branch_name)
         return branch_name
