@@ -29,6 +29,15 @@ async def root():
     """Health check endpoint to ensure API is online (Prevents 502 on root visits)."""
     return {"status": "FiXora Engine Online", "version": "1.0.0"}
 
+@app.get("/debug-env")
+async def debug_env():
+    import os
+    return {
+        "GITHUB_TOKEN_PRESENT": bool(os.getenv("GITHUB_TOKEN")),
+        "GEMINI_KEY_PRESENT": bool(os.getenv("GEMINI_API_KEY")),
+        "AI_REPO_KEY_PRESENT": bool(os.getenv("AI_REPO_KEY")),
+    }
+
 @app.options("/run-agent")
 async def run_agent_options():
     return {"message": "OK"}

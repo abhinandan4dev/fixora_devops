@@ -29,6 +29,18 @@ class IterationController:
         start_time = time.time()
         repo_path = None
         
+        # ── ENV DIAGNOSTICS (visible in Railway logs) ──
+        env_diag = {
+            "GITHUB_TOKEN": bool(os.getenv("GITHUB_TOKEN")),
+            "GEMINI_API_KEY": bool(os.getenv("GEMINI_API_KEY")),
+            "AI_FIX_KEY": bool(os.getenv("AI_FIX_KEY")),
+            "AI_ERROR_KEY": bool(os.getenv("AI_ERROR_KEY")),
+            "AI_REPO_KEY": bool(os.getenv("AI_REPO_KEY")),
+            "AI_VERIFY_KEY": bool(os.getenv("AI_VERIFY_KEY")),
+        }
+        logger.info(f"ENV CHECK: {env_diag}")
+        job_ref["raw_logs"] += f"ENV CHECK: {env_diag}\n"
+        
         try:
             # 1. Clone & Branch
             repo_path = self.git_service.clone(repo_url, self.job_id)
@@ -185,7 +197,15 @@ class IterationController:
                 total_time_seconds=elapsed,
                 total_commits=len(job_ref["fixes"]),
             )
-            self.git_service.push(repo_path, branch_name)
+            try:
+                self.git_service.push(repo_path, branch_name)
+                job_ref["raw_logs"] += f"\nGit: Successfully pushed branch '{branch_name}' to GitHub!\n"
+            except Exception as push_err:
+                logger.error(f"Git push failed: {push_err}")
+                job_ref["raw_logs"] += f"\nGit Push Error: {str(push_err)}\n"
+                # Don't crash the whole job — the fixes are still valid
+                if job_ref["status"] not in ("PASSED",):
+                    job_ref["status"] = "FINISHED_NO_PUSH"
             
             # Generate results.json (PS3 required)
             from services.formatter import format_ps3_output
