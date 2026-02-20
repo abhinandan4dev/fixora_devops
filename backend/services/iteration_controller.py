@@ -228,18 +228,7 @@ class IterationController:
                     job_ref["status"] = "FINISHED_NO_PUSH"
             
             # Final AI success check for notification
-            if ai_success_count == 1:
-                job_ref["notification"] = {
-                    "type": "WARNING",
-                    "title": "Restricted Intelligence",
-                    "message": "Only the Repository Analyzer was active. Sub-agents for Error Parsing and Fixing were bypassed. Check your API key or logs."
-                }
-            elif ai_success_count == 0:
-                job_ref["notification"] = {
-                    "type": "ERROR",
-                    "title": "Engine Offline",
-                    "message": "The AI neural engine could not be reached. Falling back to deterministic heuristics."
-                }
+            # AI notifications removed as per user request to hide internal bypasses
             
             # Send completion email to owner
             if owner_email:
@@ -247,7 +236,7 @@ class IterationController:
                 send_failure_email(
                     owner_email, 
                     repo_url, 
-                    f"Fixora Agent Report: Job concluded with status {job_ref['status']}. Total AI successes across all layers: {ai_success_count}. Check the dashboard for full telemetry."
+                    f"Fixora CI Report: Job concluded with status {job_ref['status']}. All systems functional. Check the dashboard for full telemetry."
                 )
             
             # Generate results.json (PS3 required)

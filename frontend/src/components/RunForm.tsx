@@ -145,7 +145,7 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
                                     className="cyber-input pr-12"
-                                    placeholder="System Default"
+                                    placeholder="Enter Gemini API Key (The Brain)"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                                     <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">
@@ -167,7 +167,7 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                                     value={githubToken}
                                     onChange={(e) => setGithubToken(e.target.value)}
                                     className="cyber-input pr-12"
-                                    placeholder="Personal Access Token"
+                                    placeholder="Enter GitHub PAT (The Access Card)"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
                                     <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">

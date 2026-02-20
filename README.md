@@ -87,11 +87,24 @@ When communicating with Google API gateways:
 
 ---
 
-## 🚀 Deployment Specifications
+## 🔐 Dual-Key Intelligence & Security
 
-* **Frontend Engine**: Vite + React 19 + Framer Motion + TailwindCSS (v4.0 Alpha)
-* **Backend Runtime**: Python 3.12 (Upgraded to handle explicit Union Sub-Typing `str | None` required by modern agents).
+Fixora implements a high-security execution model that separates **Cognitive Intelligence** from **Infrastructure Access**.
+
+### 1. AI Explorer Key (Cognitive Layer)
+Power the agent loop with your own **Google Gemini 2.0 API Key**. This key is used exclusively for code analysis, error parsing, and generating high-fidelity patches. By providing your own key, you bypass global rate limits and unlock dedicated neural compute for your repository.
+
+### 2. GitHub Authorization (Execution Layer)
+Secure your deployments using a **GitHub Personal Access Token (PAT)**. This token allows the agent to safely clone private code, create isolated repair branches, and push verified fixes back to your origin. Fixora uses this token only for standard Git operations via HTTPS.
+
+---
+
+## 🏗️ Deployment Specifications
+
+* **Frontend Engine**: Vite + React 19 + Framer Motion + React Three Fiber
+* **Backend Runtime**: Python 3.12 (Upgraded for Multi-Agent Orchestration)
 * **REST Framework**: FastAPI + Uvicorn Async Workers
+* **Security**: SSL-Encrypted Telemetry + Temporary Sandboxed File Systems
 
 ### Running Locally
 ```bash
@@ -111,5 +124,5 @@ npm run dev
 ---
 
 <p align="center">
-  <b>Fixora</b> — Built for developers who sleep, while their pipelines heal themselves.
+  <b>Fixora</b> — Advanced Autonomous DevOps.
 </p>
