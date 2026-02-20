@@ -40,48 +40,64 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
             transition={{ delay: 0.15, duration: 0.6, type: "spring", stiffness: 200 }}
             className="w-full relative z-20 group"
         >
-            {/* Soft inner glow & frosted glass */}
-            <div className="glass-card-deep rounded-3xl p-8 lg:p-10 w-full backdrop-blur-[60px] relative overflow-hidden ring-1 ring-white/60 drop-shadow-2xl transition-all duration-500 hover:ring-[#6366F1]/20">
+            <div className="holo-card-glow rounded-3xl p-8 lg:p-10 w-full relative">
 
-                {/* Micro accent block top right */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#6366F1]/10 to-transparent rounded-bl-[4rem]" />
+                {/* Corner accent */}
+                <div className="absolute top-0 right-0 w-28 h-28 opacity-30 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle at 100% 0%, rgba(129,140,248,0.2), transparent 70%)' }} />
+                <div className="absolute bottom-0 left-0 w-20 h-20 opacity-20 pointer-events-none"
+                    style={{ background: 'radial-gradient(circle at 0% 100%, rgba(244,114,182,0.2), transparent 70%)' }} />
 
+                {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h3 className="text-xl font-black tracking-tight text-slate-800">Launch Sequence</h3>
-                        <p className="text-[11px] font-bold text-slate-400 tracking-[0.1em] uppercase mt-1">Initialize CI/CD Agent</p>
+                        <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                            Launch Sequence
+                            <motion.div
+                                animate={{ opacity: [0.3, 1, 0.3] }}
+                                transition={{ repeat: Infinity, duration: 2 }}
+                                className="w-2 h-2 rounded-full bg-neon-green ml-1"
+                                style={{ boxShadow: '0 0 10px rgba(52,211,153,0.5)' }}
+                            />
+                        </h3>
+                        <p className="text-[11px] font-bold text-slate-500 tracking-[0.15em] uppercase mt-1 font-mono">
+                            Initialize CI/CD Agent Pipeline
+                        </p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-50 border border-slate-200 shadow-inner flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[#6366F1] text-[20px]">psychology</span>
+                    <div className="w-11 h-11 rounded-xl bg-surface-800 border border-white/[0.06] flex items-center justify-center"
+                        style={{ boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3), 0 0 20px -5px rgba(129,140,248,0.2)' }}>
+                        <span className="material-symbols-outlined text-neon-indigo text-[22px]"
+                            style={{ filter: 'drop-shadow(0 0 8px rgba(129,140,248,0.4))' }}>psychology</span>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Repo URL */}
-                    <div className="space-y-2 group/input">
-                        <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[14px]">public</span>
+                    {/* Repository URL */}
+                    <div className="space-y-2.5 group/input">
+                        <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                            <span className="material-symbols-outlined text-[13px] text-neon-indigo">public</span>
                             Source Repository
                         </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-300 group-focus-within/input:text-[#6366F1] transition-colors text-[20px]">link</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-600 group-focus-within/input:text-neon-indigo transition-colors duration-300 text-[18px]"
+                                style={{ filter: 'drop-shadow(0 0 6px rgba(129,140,248,0.3))' }}>link</span>
                             <input
                                 id="input-repo-url"
                                 type="url"
                                 required
                                 value={repoUrl}
                                 onChange={(e) => setRepoUrl(e.target.value)}
-                                className="premium-input pl-12 shadow-inner"
+                                className="cyber-input pl-12"
                                 placeholder="https://github.com/org/repo"
                             />
                         </div>
                     </div>
 
-                    {/* Team & Leader Layout */}
-                    <div className="grid grid-cols-2 gap-5">
-                        <div className="space-y-2 group/input">
-                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[14px]">groups</span>
+                    {/* Team & Leader */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2.5 group/input">
+                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-neon-pink">groups</span>
                                 Division
                             </label>
                             <input
@@ -90,13 +106,13 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                                 required
                                 value={teamName}
                                 onChange={(e) => setTeamName(e.target.value)}
-                                className="premium-input shadow-inner"
+                                className="cyber-input"
                                 placeholder="BINATEX"
                             />
                         </div>
-                        <div className="space-y-2 group/input">
-                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[14px]">shield_person</span>
+                        <div className="space-y-2.5 group/input">
+                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-neon-cyan">shield_person</span>
                                 Commander
                             </label>
                             <input
@@ -105,69 +121,84 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                                 required
                                 value={leaderName}
                                 onChange={(e) => setLeaderName(e.target.value)}
-                                className="premium-input shadow-inner"
+                                className="cyber-input"
                                 placeholder="LAKSHMI M"
                             />
                         </div>
                     </div>
 
-                    {/* Iteration Engine Slider */}
+                    {/* Depth Slider */}
                     <div className="space-y-3 pt-2">
                         <div className="flex justify-between items-end mb-1">
-                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[14px]">cycle</span>
+                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-neon-violet">cycle</span>
                                 Deep Search Depth
                             </label>
-                            <span className="text-xl font-black text-[#6366F1] tabular-nums tracking-tighter shadow-sm bg-white/60 px-2 rounded-md">
-                                {retryLimit}<span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase ml-1">Iter</span>
+                            <span className="text-xl font-black text-neon-indigo tabular-nums tracking-tighter font-mono px-3 py-1 rounded-lg bg-neon-indigo/10 border border-neon-indigo/20"
+                                style={{ textShadow: '0 0 15px rgba(129,140,248,0.5)' }}>
+                                {retryLimit}<span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase ml-1.5">Iter</span>
                             </span>
                         </div>
-                        <input
-                            id="input-retry-limit"
-                            type="range"
-                            min="1"
-                            max="20"
-                            value={retryLimit}
-                            onChange={(e) => setRetryLimit(parseInt(e.target.value))}
-                            className="w-full h-2 rounded-full appearance-none cursor-pointer bg-slate-200 accent-[#6366F1] shadow-inner"
-                        />
-                        <div className="flex justify-between text-[9px] font-extrabold text-slate-400 tracking-widest px-1">
-                            <span>MIN (1)</span>
-                            <span>MAX (20)</span>
+                        <div className="relative">
+                            <input
+                                id="input-retry-limit"
+                                type="range"
+                                min="1"
+                                max="20"
+                                value={retryLimit}
+                                onChange={(e) => setRetryLimit(parseInt(e.target.value))}
+                                className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+                                style={{
+                                    background: `linear-gradient(to right, #818cf8 0%, #818cf8 ${((retryLimit - 1) / 19) * 100}%, rgba(30,41,59,0.8) ${((retryLimit - 1) / 19) * 100}%, rgba(30,41,59,0.8) 100%)`,
+                                    boxShadow: `0 0 10px -2px rgba(129,140,248,${0.2 + (retryLimit / 20) * 0.3})`
+                                }}
+                            />
+                        </div>
+                        <div className="flex justify-between text-[9px] font-bold text-slate-600 tracking-widest px-1 font-mono">
+                            <span>MIN::1</span>
+                            <span>MAX::20</span>
                         </div>
                     </div>
 
+                    {/* Error */}
                     <AnimatePresence>
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0, y: -10 }}
                                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                                 exit={{ opacity: 0, height: 0, y: -10 }}
-                                className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 w-full shadow-sm"
+                                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 w-full"
+                                style={{ boxShadow: '0 0 20px -5px rgba(239,68,68,0.2)' }}
                             >
-                                <span className="material-symbols-outlined text-red-500 bg-white rounded-full p-1 shadow-sm">error</span>
-                                <p className="text-red-600 text-[11px] font-bold tracking-wide">{error}</p>
+                                <span className="material-symbols-outlined text-red-400 text-[18px]"
+                                    style={{ filter: 'drop-shadow(0 0 8px rgba(239,68,68,0.5))' }}>error</span>
+                                <p className="text-red-300 text-[11px] font-bold tracking-wide font-mono">{error}</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Execute Button */}
+                    {/* Submit */}
                     <motion.button
                         id="btn-run-agent"
                         type="submit"
                         disabled={loading}
                         whileTap={{ scale: 0.98 }}
-                        className="w-full premium-button h-14 mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed group"
+                        whileHover={{ scale: 1.01 }}
+                        className="w-full neon-button h-14 mt-4 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group relative"
                     >
+                        {/* Button shimmer */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+
                         {loading ? (
                             <>
                                 <span className="material-symbols-outlined text-[20px] animate-spin">refresh</span>
-                                <span className="text-[13px] tracking-[0.2em]">EXECUTING...</span>
+                                <span className="text-[12px] tracking-[0.3em] font-mono font-bold">EXECUTING...</span>
                             </>
                         ) : (
                             <>
-                                <span className="material-symbols-outlined text-[20px] group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:scale-110 transition-transform duration-300">rocket_launch</span>
-                                <span className="text-[13px] tracking-[0.2em] font-black">DEPLOY REPAIR SEQUENCE</span>
+                                <span className="material-symbols-outlined text-[20px] group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:scale-110 transition-transform duration-300"
+                                    style={{ filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.3))' }}>rocket_launch</span>
+                                <span className="text-[12px] tracking-[0.25em] font-black">DEPLOY REPAIR SEQUENCE</span>
                             </>
                         )}
                     </motion.button>
