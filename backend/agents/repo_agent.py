@@ -82,8 +82,8 @@ class RepoAgent:
                         and info["language"] == "unknown":
                     info["language"] = "python"
                     info["project_root"] = rel_root
-                    info["docker_image"] = "python:3.9-slim"
-                    info["test_command"] = "sh -c 'pip install -r requirements.txt -q && pip install pytest -q && pytest -v --tb=long --rootdir=/app'"
+                    info["docker_image"] = "python:3.12-slim"
+                    info["test_command"] = "sh -c 'pip install -r requirements.txt -q && pip install pytest -q && pytest -v --tb=long'"
 
                 elif f_lower == "package.json" \
                         and info["language"] not in ("java_gradle", "java_maven", "python"):

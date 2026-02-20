@@ -89,6 +89,13 @@ class IterationController:
 
                 for err in errors:
                     target_file = err["file"]
+                    
+                    # Clean absolute paths from docker (/app/) or local executors (/tmp/...)
+                    if target_file.startswith("/app/"):
+                        target_file = target_file.replace("/app/", "", 1)
+                    elif os.path.isabs(target_file) and target_file.startswith(repo_path):
+                        target_file = os.path.relpath(target_file, repo_path)
+                    
                     source_func = ""
 
                     sf_match = _re.search(r'source function: (\w+)', err.get("message", ""))
