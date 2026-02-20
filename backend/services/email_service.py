@@ -45,3 +45,4 @@ def send_failure_email(to_email: str, repo_url: str, error_message: str):
         logger.info(f"Failure email sent to {to_email}")
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
+#Everything uptodate
