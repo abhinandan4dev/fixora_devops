@@ -70,7 +70,8 @@ async def run_agent(request: RunAgentRequest, background_tasks: BackgroundTasks)
         request.team_name, 
         request.leader_name, 
         request.retry_limit, 
-        jobs[job_id]
+        jobs[job_id],
+        request.api_key
     )
     
     return {"job_id": job_id}

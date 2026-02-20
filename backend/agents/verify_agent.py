@@ -19,7 +19,7 @@ class VerifyAgent:
     def __init__(self):
         pass
 
-    def should_continue(self, failures: int, iteration: int, retry_limit: int) -> bool:
+    def should_continue(self, failures: int, iteration: int, retry_limit: int, api_key: str = None) -> bool:
         """
         Returns True if the loop should keep iterating, False to stop.
         """
@@ -32,7 +32,8 @@ class VerifyAgent:
             return False
 
         # Ask AI for contextual judgment
-        key = settings.AI_VERIFY_KEY
+        # Priority: 1. Passed key (user) -> 2. Settings key (system)
+        key = api_key or settings.AI_VERIFY_KEY
         if key:
             ai_decision = self._ai_decide(failures, iteration, retry_limit, key)
             if ai_decision is not None:

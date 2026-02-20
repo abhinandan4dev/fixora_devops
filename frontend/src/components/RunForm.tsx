@@ -10,7 +10,8 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
     const [repoUrl, setRepoUrl] = useState('');
     const [teamName, setTeamName] = useState('');
     const [leaderName, setLeaderName] = useState('');
-    const [retryLimit, setRetryLimit] = useState(5);
+    const [retry_limit, setRetryLimit] = useState(5);
+    const [apiKey, setApiKey] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -23,7 +24,8 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                 repo_url: repoUrl,
                 team_name: teamName,
                 leader_name: leaderName,
-                retry_limit: retryLimit,
+                retry_limit: retry_limit,
+                api_key: apiKey || undefined,
             });
             onRunStarted(job_id);
         } catch {
@@ -127,6 +129,29 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                         </div>
                     </div>
 
+                    {/* API Key */}
+                    <div className="space-y-2.5 group/input">
+                        <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                            <span className="material-symbols-outlined text-[13px] text-neon-indigo">key</span>
+                            AI Explorer Key (Optional)
+                        </label>
+                        <div className="relative">
+                            <input
+                                id="input-api-key"
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="cyber-input pr-12"
+                                placeholder="Default System Key"
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">
+                                    {apiKey ? 'ENCRYPTED' : 'SYSTEM'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Depth Slider */}
                     <div className="space-y-3 pt-2">
                         <div className="flex justify-between items-end mb-1">
@@ -136,7 +161,7 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                             </label>
                             <span className="text-xl font-black text-neon-indigo tabular-nums tracking-tighter font-mono px-3 py-1 rounded-lg bg-neon-indigo/10 border border-neon-indigo/20"
                                 style={{ textShadow: '0 0 15px rgba(129,140,248,0.5)' }}>
-                                {retryLimit}<span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase ml-1.5">Iter</span>
+                                {retry_limit}<span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase ml-1.5">Iter</span>
                             </span>
                         </div>
                         <div className="relative">
@@ -145,12 +170,12 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                                 type="range"
                                 min="1"
                                 max="20"
-                                value={retryLimit}
+                                value={retry_limit}
                                 onChange={(e) => setRetryLimit(parseInt(e.target.value))}
                                 className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
                                 style={{
-                                    background: `linear-gradient(to right, #818cf8 0%, #818cf8 ${((retryLimit - 1) / 19) * 100}%, rgba(30,41,59,0.8) ${((retryLimit - 1) / 19) * 100}%, rgba(30,41,59,0.8) 100%)`,
-                                    boxShadow: `0 0 10px -2px rgba(129,140,248,${0.2 + (retryLimit / 20) * 0.3})`
+                                    background: `linear-gradient(to right, #818cf8 0%, #818cf8 ${((retry_limit - 1) / 19) * 100}%, rgba(30,41,59,0.8) ${((retry_limit - 1) / 19) * 100}%, rgba(30,41,59,0.8) 100%)`,
+                                    boxShadow: `0 0 10px -2px rgba(129,140,248,${0.2 + (retry_limit / 20) * 0.3})`
                                 }}
                             />
                         </div>

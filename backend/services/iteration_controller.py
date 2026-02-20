@@ -11,7 +11,8 @@ from agents.verify_agent import VerifyAgent
 from services.docker_executor import DockerExecutor
 from services.git_service import GitService
 from services.scoring import calculate_repair_score
-from services.formatter import format_ps3_output  # noqa: F401 — kept for external callers
+from services.formatter import format_ps3_output  # noqa: F401
+from services.email_service import send_failure_email
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +26,11 @@ class IterationController:
         self.docker_executor = DockerExecutor()
         self.git_service = GitService()
 
-    def run_loop(self, repo_url: str, team: str, leader: str, retry_limit: int, job_ref: Dict):
+    def run_loop(self, repo_url: str, team: str, leader: str, retry_limit: int, job_ref: Dict, api_key: str = None):
         start_time = time.time()
         repo_path = None
+        ai_success_count = 0
+        owner_email = None
         
         # ── ENV DIAGNOSTICS (visible in Railway logs) ──
         env_diag = {
@@ -46,9 +49,10 @@ class IterationController:
             repo_path = self.git_service.clone(repo_url, self.job_id)
             branch_name = self.git_service.setup_branch(repo_path, team, leader)
             job_ref["branch_name"] = branch_name
+            owner_email = self.git_service.get_owner_email(repo_path)
             
             # 2. Analyze (AI Layer 1)
-            stack_info = self.repo_agent.analyze(repo_path)
+            stack_info = self.repo_agent.analyze(repo_path, api_key=api_key)
             job_ref["raw_logs"] += f"Analyzed stack: {stack_info['language']}\n"
             
             # 3. Iterative Loop
@@ -80,7 +84,7 @@ class IterationController:
                     break
 
                 # Parse Errors
-                errors = self.error_agent.parse_logs(test_result["logs"])
+                errors = self.error_agent.parse_logs(test_result["logs"], api_key=api_key)
 
                 if not test_result["success"] and not errors:
                     errors = [{
@@ -144,7 +148,10 @@ class IterationController:
                         error=resolved_err,
                         file_content=original_content,
                         test_logs=raw_logs_this_iter,
+                        api_key=api_key
                     )
+                    if ai_fixed:
+                        ai_success_count += 1
 
                     if os.path.exists(file_path):
                         safe_to_write = (not ai_fixed) or self.fix_agent.check_diff_limit(original_content, new_content)
@@ -180,7 +187,7 @@ class IterationController:
                     job_ref["status"] = "FINISHED"
                     break
 
-                if not self.verify_agent.should_continue(len(errors), iteration, retry_limit):
+                if not self.verify_agent.should_continue(len(errors), iteration, retry_limit, api_key=api_key):
                     job_ref["status"] = "FINISHED"
                     break
                     
@@ -243,6 +250,13 @@ class IterationController:
             logger.error(f"Loop failed: {e}")
             job_ref["status"] = "ERROR"
             job_ref["raw_logs"] += f"\nCritical Error: {str(e)}"
+            
+            # If the loop failed and we have no AI successes, but an API key was provided, notify owner
+            if api_key and ai_success_count == 0 and owner_email:
+                send_failure_email(owner_email, repo_url, f"Agent failed to execute any AI tasks. Possible invalid key or environment issue. Error: {str(e)}")
+            elif not api_key and ai_success_count == 0 and owner_email:
+                # Optional: notify if system key fails
+                send_failure_email(owner_email, repo_url, f"System default key failed to run agent. Error: {str(e)}")
         finally:
             job_ref["total_time_seconds"] = round(time.time() - start_time, 2)
             if repo_path:

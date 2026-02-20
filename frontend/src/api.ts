@@ -3,6 +3,7 @@ export interface RunAgentRequest {
     team_name: string;
     leader_name: string;
     retry_limit: number;
+    api_key?: string;
 }
 
 export interface FixResult {

@@ -33,6 +33,7 @@ class FixAgent:
         error: Dict,
         file_content: str,
         test_logs: str,
+        api_key: str = None,
     ) -> Tuple[str, str, bool]:
         """Attempts to fix the broken file by rewriting code or appending instructions."""
         bug_type = sanitize_bug_type(error.get("type", "LOGIC"))
@@ -43,7 +44,8 @@ class FixAgent:
         # to prevent the file from bloating with infinite comments.
         cleaned_content = re.sub(r'\n+#={10,}.*?\[AI-AGENT FIX REQUIRED.*?\n#={10,}\n', '', file_content, flags=re.DOTALL)
         
-        key = settings.AI_FIX_KEY
+        # Priority: 1. Passed key (user) -> 2. Settings key (system)
+        key = api_key or settings.AI_FIX_KEY
         if key:
             logger.info(f"FixAgent: Attempting AI rewrite for {file}...")
             fixed_code, desc = self._ai_rewrite(error, cleaned_content, test_logs, key)

@@ -21,7 +21,7 @@ class RepoAgent:
     def __init__(self):
         pass
 
-    def analyze(self, repo_path: str) -> Dict:
+    def analyze(self, repo_path: str, api_key: str = None) -> Dict:
         """
         Returns a stack info dict. Tries AI first, falls back to filesystem scan.
         """
@@ -29,7 +29,8 @@ class RepoAgent:
         info = self._filesystem_scan(repo_path)
 
         # --- AI enhancement (optional) ---
-        key = settings.AI_REPO_KEY
+        # Priority: 1. Passed key (user) -> 2. Settngs key (system)
+        key = api_key or settings.AI_REPO_KEY
         if key:
             ai_result = self._ai_analyze(info, repo_path, key)
             if ai_result:

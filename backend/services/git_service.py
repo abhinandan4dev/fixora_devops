@@ -106,3 +106,13 @@ class GitService:
                     return
             except:
                 time.sleep(0.5)
+
+    def get_owner_email(self, repo_path: str) -> str | None:
+        """Attempts to get the email of the last commit author."""
+        try:
+            repo = git.Repo(repo_path)
+            last_commit = repo.head.commit
+            return last_commit.author.email
+        except Exception as e:
+            logger.error(f"Failed to get owner email: {e}")
+            return None
