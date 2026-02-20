@@ -68,14 +68,21 @@ class DockerExecutor:
         import subprocess
         import os
         
-        logger.info(f"LocalExecutor: Running command in {working_dir}...")
+        # Determine the correct local working directory from volume mappings
+        local_cwd = working_dir
+        if volumes:
+            for host_path, v in volumes.items():
+                if isinstance(v, dict) and v.get('bind') == working_dir:
+                    local_cwd = host_path
+                    break
+
+        logger.info(f"LocalExecutor: Running command in host path -> {local_cwd}...")
         try:
             # We run the command directly on the host OS
-            # Note: volumes mapping is ignored in local mode as we are already in the repo path
             process = subprocess.run(
                 command,
                 shell=True,
-                cwd=working_dir,
+                cwd=local_cwd,
                 capture_output=True,
                 text=True,
                 timeout=timeout

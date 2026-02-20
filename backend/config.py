@@ -29,8 +29,9 @@ class Settings:
     @property
     def AI_VERIFY_KEY(self): return get_ai_key("AI_VERIFY_KEY")
     @property
-    def GITHUB_TOKEN(self): return get_ai_key("GITHUB_TOKEN")
+    def GITHUB_TOKEN(self): return os.getenv("GITHUB_TOKEN", "")
     
     app_name: str = "FiXora"
 
 settings = Settings()
+
