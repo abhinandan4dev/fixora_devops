@@ -46,7 +46,7 @@ class GitService:
         # Cloud environments don't have global git configs, we must set them per-repo
         with repo.config_writer() as git_config:
             git_config.set_value('user', 'email', 'bot@fixora.ai')
-            git_config.set_value('user', 'name', f'FiXora Agent ({leader})')
+            git_config.set_value('user', 'name', f'Fixora Agent ({leader})')
             
         logger.info(f"Git: Creating branch {branch_name}")
         repo.git.checkout("-B", branch_name)

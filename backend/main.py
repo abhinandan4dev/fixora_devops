@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="FiXora Autonomous CI/CD Healing Agent")
+app = FastAPI(title="Fixora Autonomous CI/CD Healing Agent")
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,7 +27,7 @@ jobs = {}
 @app.get("/")
 async def root():
     """Health check endpoint to ensure API is online (Prevents 502 on root visits)."""
-    return {"status": "FiXora Engine Online", "version": "1.0.0"}
+    return {"status": "Fixora Engine Online", "version": "1.0.0"}
 
 @app.get("/debug-env")
 async def debug_env():

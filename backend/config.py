@@ -31,7 +31,7 @@ class Settings:
     @property
     def GITHUB_TOKEN(self): return os.getenv("GITHUB_TOKEN", "")
     
-    app_name: str = "FiXora"
+    app_name: str = "Fixora"
 
 settings = Settings()
 

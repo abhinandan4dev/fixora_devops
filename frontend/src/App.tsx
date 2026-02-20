@@ -146,14 +146,13 @@ function App() {
               {/* Logo */}
               <div className="relative group cursor-pointer">
                 <div className="absolute inset-0 bg-gradient-to-r from-neon-indigo to-neon-pink rounded-xl blur-md opacity-40 group-hover:opacity-80 transition-opacity duration-500" />
-                <div className="relative bg-surface-800 rounded-xl p-2.5 border border-white/[0.08] flex items-center justify-center h-11 w-11"
+                <div className="relative bg-surface-800 rounded-xl p-1 border border-white/[0.08] flex items-center justify-center h-11 w-11 overflow-hidden"
                   style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)' }}>
-                  <span className="material-symbols-outlined text-[22px] text-neon-indigo"
-                    style={{ filter: 'drop-shadow(0 0 8px rgba(129,140,248,0.5))' }}>vital_signs</span>
+                  <img src="/logo.jpeg" alt="Fixora Logo" className="w-full h-full object-cover rounded-lg" />
                 </div>
               </div>
               <div className="flex flex-col">
-                <h1 className="text-lg font-black text-white leading-tight tracking-tight">FiXora</h1>
+                <h1 className="text-lg font-black text-white leading-tight tracking-tight">Fixora</h1>
                 <span className="text-[9px] font-extrabold text-neon-indigo tracking-[0.3em] uppercase leading-none"
                   style={{ textShadow: '0 0 20px rgba(129,140,248,0.5)' }}>Intelligence Engine</span>
               </div>
