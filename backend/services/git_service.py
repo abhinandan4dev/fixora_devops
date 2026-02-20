@@ -21,7 +21,18 @@ class GitService:
     def _auth_url(self, repo_url: str, user_token: str = None) -> str:
         """Inject GITHUB_TOKEN into HTTPS URL for authenticated push."""
         token = user_token or settings.GITHUB_TOKEN
-        if token and "https://" in repo_url:
+        
+        # Validation: Tokens should not contain '@' (prevents email addresses from breaking the URL)
+        if not token or "@" in token:
+            if user_token and "@" in user_token:
+                logger.warning(f"Git: Ignoring invalid token (looks like email): {user_token}")
+            
+            # If user provided a bad token, try system default if it's valid, else no-auth
+            token = settings.GITHUB_TOKEN
+            if not token or "@" in token:
+                return repo_url
+
+        if "https://" in repo_url:
             clean = repo_url.replace("https://", "")
             return f"https://{token}@{clean}"
         return repo_url

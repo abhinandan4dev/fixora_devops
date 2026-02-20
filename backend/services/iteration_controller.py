@@ -287,12 +287,18 @@ class IterationController:
             job_ref["status"] = "ERROR"
             job_ref["raw_logs"] += f"\nCritical Error: {str(e)}"
             
-            # If the loop failed and we have no AI successes, but an API key was provided, notify owner
-            if api_key and ai_success_count == 0 and owner_email:
-                send_failure_email(owner_email, repo_url, f"Agent failed to execute any AI tasks. Possible invalid key or environment issue. Error: {str(e)}")
-            elif not api_key and ai_success_count == 0 and owner_email:
-                # Optional: notify if system key fails
-                send_failure_email(owner_email, repo_url, f"System default key failed to run agent. Error: {str(e)}")
+            # Reliable Notification Logic
+            # 1. Use owner_email if fetched
+            # 2. Fallback to System Admin (SMTP_USER) so the failure isn't silent
+            recipient = owner_email or os.getenv("SMTP_USER")
+            
+            if recipient:
+                phase = "Initialization/Clone" if not repo_path else "Neural Execution"
+                send_failure_email(
+                    recipient, 
+                    repo_url, 
+                    f"Fixora Agent failed during {phase}.\n\nError: {str(e)}\n\nPossible solutions: Verify your GitHub Token permissions and ensure your Gemini API Key is valid."
+                )
         finally:
             job_ref["total_time_seconds"] = round(time.time() - start_time, 2)
             if repo_path:
