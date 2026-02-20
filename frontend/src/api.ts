@@ -35,7 +35,9 @@ export interface RunStatusResponse {
     raw_logs: string;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// Strip any trailing slash the user might have accidentally included in the Vercel dashboard
+const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const API_BASE = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export const api = {
     runAgent: async (data: RunAgentRequest): Promise<{ job_id: string }> => {
