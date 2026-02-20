@@ -29,6 +29,10 @@ async def root():
     """Health check endpoint to ensure API is online (Prevents 502 on root visits)."""
     return {"status": "FiXora Engine Online", "version": "1.0.0"}
 
+@app.options("/run-agent")
+async def run_agent_options():
+    return {"message": "OK"}
+
 @app.post("/run-agent")
 async def run_agent(request: RunAgentRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
