@@ -33,6 +33,7 @@ export interface RunStatusResponse {
     score: number;
     fixes: FixResult[];
     timeline: TimelineEvent[];
+    notification?: { type: 'WARNING' | 'ERROR'; title: string; message: string };
     raw_logs: string;
 }
 

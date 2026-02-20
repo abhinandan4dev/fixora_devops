@@ -35,6 +35,7 @@ class RepoAgent:
             ai_result = self._ai_analyze(info, repo_path, key)
             if ai_result:
                 info.update(ai_result)
+                info["ai_used"] = True
 
         logger.info(f"RepoAgent: Analysis Result -> {info}")
         return info

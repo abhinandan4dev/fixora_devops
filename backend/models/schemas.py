@@ -38,6 +38,7 @@ class RunStatusResponse(BaseModel):
     score: float = 0.0
     fixes: List[FixResult]
     timeline: List[TimelineEvent]
+    notification: Optional[dict] = None
     raw_logs: str
 
 # ── AI Output Validation Schemas ─────────────────────────────────────────────

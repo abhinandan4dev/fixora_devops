@@ -112,8 +112,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ status }) => {
                                                 />
                                             )}
                                             <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-700 ${done ? 'bg-neon-green/20 border border-neon-green/30' :
-                                                    current ? `${agent.bg}/20 border border-white/10` :
-                                                        'bg-surface-700 border border-white/[0.04]'
+                                                current ? `${agent.bg}/20 border border-white/10` :
+                                                    'bg-surface-700 border border-white/[0.04]'
                                                 }`}
                                                 style={{
                                                     boxShadow: done ? '0 0 20px -3px rgba(52,211,153,0.4)' :
@@ -201,6 +201,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ status }) => {
 
                 </div>
             </motion.section>
+
+            {/* ═══════════ AI NOTIFICATIONS ═══════════ */}
+            <AnimatePresence>
+                {status.notification && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                        exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                        className="w-full"
+                    >
+                        <div className={`p-5 rounded-2xl border backdrop-blur-xl flex items-start gap-4 transition-all duration-500 shadow-lg ${status.notification.type === 'ERROR'
+                                ? 'bg-neon-pink/10 border-neon-pink/30 text-neon-pink shadow-neon-pink/10'
+                                : 'bg-neon-orange/10 border-neon-orange/30 text-neon-orange shadow-neon-orange/10'
+                            }`}>
+                            <div className="flex-shrink-0 mt-1">
+                                <span className="material-symbols-outlined text-2xl animate-pulse">
+                                    {status.notification.type === 'ERROR' ? 'gpp_maybe' : 'shield_with_heart'}
+                                </span>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-black uppercase tracking-[0.2em] mb-1 font-mono">
+                                    {status.notification.title}
+                                </h3>
+                                <p className="text-[11px] font-bold opacity-80 leading-relaxed font-mono">
+                                    {status.notification.message}
+                                </p>
+                            </div>
+                            <div className="flex-shrink-0 self-center">
+                                <span className="text-[9px] font-black uppercase tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/10 font-mono">
+                                    Agent Alert
+                                </span>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* ═══════════ METRICS ═══════════ */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -300,8 +336,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ status }) => {
                         {(['fixes', 'logs'] as const).map(t => (
                             <button key={t} onClick={() => setTab(t)}
                                 className={`flex-1 py-3 text-[11px] font-black uppercase tracking-[0.25em] rounded-xl transition-all relative cursor-pointer font-mono ${tab === t
-                                        ? 'bg-surface-700 text-neon-indigo border border-neon-indigo/20'
-                                        : 'text-slate-500 hover:text-slate-300 hover:bg-surface-700/50 border border-transparent'
+                                    ? 'bg-surface-700 text-neon-indigo border border-neon-indigo/20'
+                                    : 'text-slate-500 hover:text-slate-300 hover:bg-surface-700/50 border border-transparent'
                                     }`}
                                 style={tab === t ? { boxShadow: '0 0 20px -5px rgba(129,140,248,0.2)' } : undefined}>
                                 <div className="flex items-center justify-center gap-2">

@@ -53,6 +53,8 @@ class IterationController:
             
             # 2. Analyze (AI Layer 1)
             stack_info = self.repo_agent.analyze(repo_path, api_key=api_key)
+            if stack_info.get("ai_used"):
+                ai_success_count += 1
             job_ref["raw_logs"] += f"Analyzed stack: {stack_info['language']}\n"
             
             # 3. Iterative Loop
@@ -213,6 +215,25 @@ class IterationController:
                 # Don't crash the whole job — the fixes are still valid
                 if job_ref["status"] not in ("PASSED",):
                     job_ref["status"] = "FINISHED_NO_PUSH"
+            
+            # Final AI success check for notification
+            if ai_success_count == 1:
+                job_ref["notification"] = {
+                    "type": "WARNING",
+                    "title": "Restricted Intelligence",
+                    "message": "Only the Repository Analyzer was active. Sub-agents for Error Parsing and Fixing were bypassed. Check your API key or logs."
+                }
+            elif ai_success_count == 0:
+                job_ref["notification"] = {
+                    "type": "ERROR",
+                    "title": "Engine Offline",
+                    "message": "The AI neural engine could not be reached. Falling back to deterministic heuristics."
+                }
+            
+            # Send completion email to owner
+            if owner_email:
+                status_msg = "successfully healed your repository" if job_ref["status"] == "PASSED" else "completed with some pending issues"
+                send_failure_email(owner_email, repo_url, f"Fixora Agent has {status_msg}. Status: {job_ref['status']}. AI Successes: {ai_success_count}")
             
             # Generate results.json (PS3 required)
             from services.formatter import format_ps3_output
