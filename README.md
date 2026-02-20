@@ -99,6 +99,28 @@ Secure your deployments using a **GitHub Personal Access Token (PAT)**. This tok
 
 ---
 
+## 🕹️ Field Intelligence: How Inputs Matter
+
+Every parameter in the Fixora Launch Dashboard directly calibrates the agent's cognitive and administrative behavior:
+
+### 🌐 Repository Target URL
+*   **The Blueprint**: This is the source of truth. The agent uses this URL to download your codebase and map the existing project structure (Layer 1: `RepoAgent`). Without the correct URL, the agent has no context to scan or heal.
+
+### 👥 Division & Commander (Team & Leader)
+*   **The Identity**: Fixora generates unique, isolated branches for every repair session. These fields are used to construct the branch name (e.g., `fixora/team-leader-timestamp`). 
+*   **Git Traceability**: These names are also injected into the Git commit metadata, ensuring that when you view your GitHub history, you know exactly which team and leader authorized the AI-driven patches.
+
+### 🔄 Iteration Limit (Retry Limit)
+*   **The Compute Budget**: This determines how many times the agent is allowed to try fixing a single bug. If a fix fails the verification test (Layer 4), the agent will loop back and try a different approach. Higher limits allow for deeper complex repairs but consume more API tokens.
+
+### 🧠 AI Explorer Key (Gemini API)
+*   **The Neural Engine**: This key powers the "Intelligence" of the agent. It is used by the **ErrorAgent** to understand stacktraces and the **FixAgent** to rewrite your buggy source code. Providing your own key ensures higher rate limits and faster response times for Layer 2 and Layer 3 operations.
+
+### 🛡️ GitHub Authorization (PAT)
+*   **The Permission Layer**: Unlike the AI key which provides "thought," the PAT provides "action." It allows the engine to securely bypass 2FA and SSH constraints to **Push** the final, verified fixes back to your repository. Without this, the agent can fix the code locally but cannot save the changes to your GitHub.
+
+---
+
 ## 🏗️ Deployment Specifications
 
 * **Frontend Engine**: Vite + React 19 + Framer Motion + React Three Fiber
