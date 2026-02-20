@@ -18,22 +18,22 @@ logger = logging.getLogger(__name__)
 
 
 class GitService:
-    def _auth_url(self, repo_url: str) -> str:
+    def _auth_url(self, repo_url: str, user_token: str = None) -> str:
         """Inject GITHUB_TOKEN into HTTPS URL for authenticated push."""
-        token = settings.GITHUB_TOKEN
+        token = user_token or settings.GITHUB_TOKEN
         if token and "https://" in repo_url:
             clean = repo_url.replace("https://", "")
             return f"https://{token}@{clean}"
         return repo_url
 
-    def clone(self, repo_url: str, job_id: str) -> str:
+    def clone(self, repo_url: str, job_id: str, token: str = None) -> str:
         base_dir = tempfile.gettempdir()
         target_path = os.path.join(base_dir, "fixtora_hackathon", job_id)
 
         if os.path.exists(target_path):
             self.cleanup(target_path)
 
-        auth_url = self._auth_url(repo_url)
+        auth_url = self._auth_url(repo_url, user_token=token)
         # Log original URL (never the token)
         logger.info(f"Git: Cloning {repo_url}")
         git.Repo.clone_from(auth_url, target_path)

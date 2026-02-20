@@ -4,6 +4,7 @@ export interface RunAgentRequest {
     leader_name: string;
     retry_limit: number;
     api_key?: string;
+    github_token?: string;
 }
 
 export interface FixResult {

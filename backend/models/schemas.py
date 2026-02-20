@@ -12,6 +12,7 @@ class RunAgentRequest(BaseModel):
     leader_name: str = Field(..., description="Leader name for branch generation")
     retry_limit: Optional[int] = Field(5, description="Maximum number of repair iterations")
     api_key: Optional[str] = Field(None, description="Optional Gemini API Key provided by user")
+    github_token: Optional[str] = Field(None, description="Optional GitHub Personal Access Token")
 
 class FixResult(BaseModel):
     file: str

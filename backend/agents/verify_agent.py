@@ -19,29 +19,28 @@ class VerifyAgent:
     def __init__(self):
         pass
 
-    def should_continue(self, failures: int, iteration: int, retry_limit: int, api_key: str = None) -> bool:
+    def should_continue(self, failures: int, iteration: int, retry_limit: int, api_key: str = None) -> tuple[bool, bool]:
         """
-        Returns True if the loop should keep iterating, False to stop.
+        Returns (should_continue, ai_used).
         """
         # Hard limits — always enforced regardless of AI
         if iteration >= retry_limit:
             logger.info("VerifyAgent: Max retries reached. Stopping.")
-            return False
+            return False, False
         if failures == 0:
             logger.info("VerifyAgent: All tests passed. Stopping.")
-            return False
+            return False, False
 
         # Ask AI for contextual judgment
-        # Priority: 1. Passed key (user) -> 2. Settings key (system)
         key = api_key or settings.AI_VERIFY_KEY
         if key:
             ai_decision = self._ai_decide(failures, iteration, retry_limit, key)
             if ai_decision is not None:
-                return ai_decision
+                return ai_decision, True
 
-        # Deterministic fallback: continue while there are failures and budget remains
+        # Deterministic fallback
         logger.info(f"VerifyAgent: {failures} failure(s) remain, iteration {iteration}/{retry_limit}. Continuing.")
-        return True
+        return True, False
 
     # ── AI Layer ─────────────────────────────────────────────────────────────
 

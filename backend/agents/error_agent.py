@@ -20,19 +20,18 @@ class ErrorAgent:
     def __init__(self):
         pass
 
-    def parse_logs(self, logs: str, api_key: str = None) -> List[Dict]:
+    def parse_logs(self, logs: str, api_key: str = None) -> tuple[List[Dict], bool]:
         """
-        Returns a list of error dicts: {file, line, type, message}.
-        AI path is attempted first; deterministic regex is the fallback.
+        Returns (list of error dicts, ai_used).
         """
         key = api_key or settings.AI_ERROR_KEY
         if key:
             ai_errors = self._ai_parse(logs, key)
             if ai_errors is not None:
-                return ai_errors
+                return ai_errors, True
 
         logger.info("ErrorAgent: Using deterministic regex parser.")
-        return self._regex_parse(logs)
+        return self._regex_parse(logs), False
 
     # ── AI Layer ─────────────────────────────────────────────────────────────
 

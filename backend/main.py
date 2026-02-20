@@ -71,7 +71,8 @@ async def run_agent(request: RunAgentRequest, background_tasks: BackgroundTasks)
         request.leader_name, 
         request.retry_limit, 
         jobs[job_id],
-        request.api_key
+        api_key=request.api_key,
+        github_token=request.github_token
     )
     
     return {"job_id": job_id}

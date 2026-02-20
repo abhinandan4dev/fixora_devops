@@ -26,7 +26,7 @@ class IterationController:
         self.docker_executor = DockerExecutor()
         self.git_service = GitService()
 
-    def run_loop(self, repo_url: str, team: str, leader: str, retry_limit: int, job_ref: Dict, api_key: str = None):
+    def run_loop(self, repo_url: str, team: str, leader: str, retry_limit: int, job_ref: Dict, api_key: str = None, github_token: str = None):
         start_time = time.time()
         repo_path = None
         ai_success_count = 0
@@ -46,16 +46,20 @@ class IterationController:
         
         try:
             # 1. Clone & Branch
-            repo_path = self.git_service.clone(repo_url, self.job_id)
+            repo_path = self.git_service.clone(repo_url, self.job_id, token=github_token)
             branch_name = self.git_service.setup_branch(repo_path, team, leader)
             job_ref["branch_name"] = branch_name
+            
+            # Fetch email as early as possible
             owner_email = self.git_service.get_owner_email(repo_path)
+            if owner_email:
+                job_ref["raw_logs"] += f"Detected repository owner: {owner_email}\n"
             
             # 2. Analyze (AI Layer 1)
             stack_info = self.repo_agent.analyze(repo_path, api_key=api_key)
             if stack_info.get("ai_used"):
                 ai_success_count += 1
-            job_ref["raw_logs"] += f"Analyzed stack: {stack_info['language']}\n"
+            job_ref["raw_logs"] += f"Analyzed stack: {stack_info['language']} (AI used: {stack_info.get('ai_used', False)})\n"
             
             # 3. Iterative Loop
             iteration = 1
@@ -85,8 +89,10 @@ class IterationController:
                     job_ref["status"] = "ERROR"
                     break
 
-                # Parse Errors
-                errors = self.error_agent.parse_logs(test_result["logs"], api_key=api_key)
+                # Parse Errors (AI Layer 2)
+                errors, ai_parsed = self.error_agent.parse_logs(test_result["logs"], api_key=api_key)
+                if ai_parsed:
+                    ai_success_count += 1
 
                 if not test_result["success"] and not errors:
                     errors = [{
@@ -97,7 +103,7 @@ class IterationController:
                     }]
 
                 job_ref["failures_detected"] += len(errors)
-
+                
                 if test_result["success"] and not errors:
                     job_ref["status"] = "PASSED"
                     break
@@ -189,7 +195,12 @@ class IterationController:
                     job_ref["status"] = "FINISHED"
                     break
 
-                if not self.verify_agent.should_continue(len(errors), iteration, retry_limit, api_key=api_key):
+                # Verification (AI Layer 4)
+                should_cont, ai_verified = self.verify_agent.should_continue(len(errors), iteration, retry_limit, api_key=api_key)
+                if ai_verified:
+                    ai_success_count += 1
+                
+                if not should_cont:
                     job_ref["status"] = "FINISHED"
                     break
                     
@@ -232,8 +243,12 @@ class IterationController:
             
             # Send completion email to owner
             if owner_email:
-                status_msg = "successfully healed your repository" if job_ref["status"] == "PASSED" else "completed with some pending issues"
-                send_failure_email(owner_email, repo_url, f"Fixora Agent has {status_msg}. Status: {job_ref['status']}. AI Successes: {ai_success_count}")
+                status_msg = "successfully healed your repository" if job_ref["status"] == "PASSED" else "completed its run"
+                send_failure_email(
+                    owner_email, 
+                    repo_url, 
+                    f"Fixora Agent Report: Job concluded with status {job_ref['status']}. Total AI successes across all layers: {ai_success_count}. Check the dashboard for full telemetry."
+                )
             
             # Generate results.json (PS3 required)
             from services.formatter import format_ps3_output

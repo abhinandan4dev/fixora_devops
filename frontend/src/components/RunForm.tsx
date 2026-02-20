@@ -12,6 +12,7 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
     const [leaderName, setLeaderName] = useState('');
     const [retry_limit, setRetryLimit] = useState(5);
     const [apiKey, setApiKey] = useState('');
+    const [githubToken, setGithubToken] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -26,6 +27,7 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                 leader_name: leaderName,
                 retry_limit: retry_limit,
                 api_key: apiKey || undefined,
+                github_token: githubToken || undefined,
             });
             onRunStarted(job_id);
         } catch {
@@ -130,24 +132,48 @@ export const RunForm: React.FC<RunFormProps> = ({ onRunStarted }) => {
                     </div>
 
                     {/* API Key */}
-                    <div className="space-y-2.5 group/input">
-                        <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
-                            <span className="material-symbols-outlined text-[13px] text-neon-indigo">key</span>
-                            AI Explorer Key (Optional)
-                        </label>
-                        <div className="relative">
-                            <input
-                                id="input-api-key"
-                                type="password"
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                className="cyber-input pr-12"
-                                placeholder="Default System Key"
-                            />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
-                                <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">
-                                    {apiKey ? 'ENCRYPTED' : 'SYSTEM'}
-                                </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2.5 group/input">
+                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-neon-indigo">key</span>
+                                AI Explorer Key (Optional)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="input-api-key"
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    className="cyber-input pr-12"
+                                    placeholder="System Default"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                    <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">
+                                        {apiKey ? 'ENCRYPTED' : 'SYSTEM'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2.5 group/input">
+                            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-neon-pink">hub</span>
+                                GitHub Authorization (Optional)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="input-github-token"
+                                    type="password"
+                                    value={githubToken}
+                                    onChange={(e) => setGithubToken(e.target.value)}
+                                    className="cyber-input pr-12"
+                                    placeholder="Personal Access Token"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                                    <span className="text-[9px] font-bold text-slate-600 tracking-widest uppercase font-mono">
+                                        {githubToken ? 'AUTH ON' : 'PUBLIC'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
