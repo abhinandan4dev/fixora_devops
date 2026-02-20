@@ -21,9 +21,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # In-memory session storage
 jobs = {}
+
+@app.get("/")
+async def root():
+    """Health check endpoint to ensure API is online (Prevents 502 on root visits)."""
+    return {"status": "FiXora Engine Online", "version": "1.0.0"}
 
 @app.post("/run-agent")
 async def run_agent(request: RunAgentRequest, background_tasks: BackgroundTasks):
@@ -66,5 +70,8 @@ async def get_status(job_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    # Read the PORT environment variable injected by Railway, defaulting to 8000
+    port = int(os.environ.get("PORT", 8000))
     # Production configuration: non-reload
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=1)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, workers=1)

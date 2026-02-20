@@ -16,5 +16,5 @@ COPY . .
 
 # Expose FastAPI port
 EXPOSE 8000
-# Start the server using the dynamic PORT provided by Railway
-CMD sh -c "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"
+# Use Python interpreter natively to start the app and resolve the PORT
+CMD ["python", "main.py"]
